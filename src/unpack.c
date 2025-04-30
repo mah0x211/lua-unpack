@@ -22,6 +22,7 @@
  */
 
 #include <lauxhlib.h>
+#include <limits.h>
 #include <lua.h>
 
 static int unpack_lua(lua_State *L)

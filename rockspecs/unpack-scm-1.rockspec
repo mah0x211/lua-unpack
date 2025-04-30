@@ -1,13 +1,13 @@
 package = "unpack"
 version = "scm-1"
 source = {
-    url = "git+https://github.com/mah0x211/lua-unpack.git"
+    url = "git+https://github.com/mah0x211/lua-unpack.git",
 }
 description = {
     summary = "get the elements from the given list.",
     homepage = "https://github.com/mah0x211/lua-unpack",
     license = "MIT/X11",
-    maintainer = "Masatoshi Fukunaga"
+    maintainer = "Masatoshi Fukunaga",
 }
 dependencies = {
     "lua >= 5.1",
@@ -16,20 +16,18 @@ dependencies = {
 build = {
     type = 'make',
     build_variables = {
-        PACKAGE         = 'unpack',
-        LIB_EXTENSION   = '$(LIB_EXTENSION)',
-        SRCDIR          = 'src',
-        CFLAGS          = '$(CFLAGS)',
-        WARNINGS        = '-Wall -Wno-trigraphs -Wmissing-field-initializers -Wreturn-type -Wmissing-braces -Wparentheses -Wno-switch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare',
-        CPPFLAGS        = '-I$(LUA_INCDIR)',
-        LDFLAGS         = '$(LIBFLAG)',
-        COVERAGE        = '$(COVERAGE)',
+        PACKAGE = 'unpack',
+        LIB_EXTENSION = '$(LIB_EXTENSION)',
+        CFLAGS = '$(CFLAGS)',
+        WARNINGS = '-Wall -Wno-trigraphs -Wmissing-field-initializers -Wreturn-type -Wmissing-braces -Wparentheses -Wno-switch -Wunused-function -Wunused-label -Wunused-parameter -Wunused-variable -Wunused-value -Wuninitialized -Wunknown-pragmas -Wshadow -Wsign-compare',
+        CPPFLAGS = '-I$(LUA_INCDIR)',
+        LDFLAGS = '$(LIBFLAG)',
+        UNPACK_COVERAGE = '$(UNPACK_COVERAGE)',
     },
     install_variables = {
-        PACKAGE         = 'unpack',
-        LIB_EXTENSION   = '$(LIB_EXTENSION)',
-        SRCDIR          = 'src',
-        LIBDIR          = '$(LIBDIR)',
-        LUA_INCDIR      = '$(LUA_INCDIR)',
-    }
+        PACKAGE = 'unpack',
+        LIB_EXTENSION = '$(LIB_EXTENSION)',
+        LIBDIR = '$(LIBDIR)',
+        LUA_INCDIR = '$(LUA_INCDIR)',
+    },
 }

@@ -49,21 +49,23 @@ static int unpack_lua(lua_State *L)
                 int top         = lua_gettop(th);
                 lua_Integer idx = lua_tointeger(L, -2);
 
-                // ignore smaller than i
+                // ignore index less than i
                 if (idx < i) {
                     lua_pop(L, 1);
                     continue;
                 }
-                idx = idx - i + 1;
 
+                // calculate target index on new stack
+                idx = idx - i + 1;
                 if (idx > top && !lua_checkstack(th, idx - top)) {
                     return luaL_error(L, "too many results to unpack");
-                } else if (idx < top) {
+                } else if (idx <= top) {
                     lua_xmove(L, th, 1);
-                    lua_insert(th, idx);
+                    lua_replace(th, idx);
                     continue;
                 }
 
+                // fill nils for missing indexes
                 for (int j = top + 1; j < idx; j++) {
                     lua_pushnil(th);
                 }
@@ -72,6 +74,8 @@ static int unpack_lua(lua_State *L)
             }
             lua_pop(L, 1);
         }
+
+        // return results
         lua_settop(L, 1);
         n = lua_gettop(th);
         if (!lua_checkstack(L, n)) {

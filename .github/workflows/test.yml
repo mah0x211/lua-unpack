@@ -9,15 +9,12 @@ on:
 jobs:
   luacheck:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mah0x211/lua-ci:latest
     steps:
     -
       name: Checkout
       uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-    -
-      name: Setup Lua
-      uses: mah0x211/setup-lua@v1
     -
       name: Install Tools
       run: luarocks install luacheck
@@ -27,7 +24,10 @@ jobs:
         luacheck .
 
   test:
+    needs: luacheck
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mah0x211/lua-ci:latest
     strategy:
       matrix:
         lua-version:
@@ -38,31 +38,33 @@ jobs:
           - "lj-v2.1:latest"
     steps:
     -
+      name: Switch Lua Version
+      run: |
+        lenv -g use ${{ matrix.lua-version }}
+        lua -v || true
+    -
       name: Checkout
       uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-    -
-      name: Setup Lua
-      uses: mah0x211/setup-lua@v1
-      with:
-        versions: ${{ matrix.lua-version }}
-    -
-      name: Install Tools
-      run: |
-        sudo apt-get install llvm -y
-        luarocks install testcase
     -
       name: Install
       run: |
-        luarocks make UNPACK_COVERAGE='--coverage'
+        UNPACK_COVERAGE=1 luarocks make rockspecs/unpack-scm-1.rockspec
+    -
+      name: Install Tools
+      run: |
+        luarocks install testcase
+    -
+      name: Run Test
+      run: |
+        testcase ./test/
     -
       name: Generate coverage reports
       run: |
-        make coverage
+        sh ./covgen.sh
     -
       name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info
         flags: unittests

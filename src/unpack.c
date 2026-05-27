@@ -21,11 +21,27 @@
  *
  */
 
-#include <limits.h>
 // lua
+#include <lauxlib.h>
 #include <lua.h>
-// modules
-#include "lauxhlib.h"
+// system
+#include <limits.h>
+
+#if LUA_VERSION_NUM < 502
+# define unpack_rawlen(L, idx) lua_objlen((L), (idx))
+#else
+# define unpack_rawlen(L, idx) lua_rawlen((L), (idx))
+#endif
+
+#if LUA_VERSION_NUM >= 503
+# define unpack_isinteger(L, idx) lua_isinteger((L), (idx))
+#else
+static inline int unpack_isinteger(lua_State *L, int idx)
+{
+    return lua_type(L, idx) == LUA_TNUMBER &&
+           (lua_Number)lua_tointeger(L, idx) == lua_tonumber(L, idx);
+}
+#endif
 
 static int unpack_lua(lua_State *L)
 {
@@ -33,9 +49,9 @@ static int unpack_lua(lua_State *L)
     lua_Integer e  = 0;
     unsigned int n = 0;
 
-    lauxh_checktable(L, 1);
-    i = lauxh_optinteger(L, 2, 1);
-    e = lauxh_optinteger(L, 3, lauxh_rawlen(L, 1));
+    luaL_checktype(L, 1, LUA_TTABLE);
+    i = luaL_optinteger(L, 2, 1);
+    e = luaL_optinteger(L, 3, (lua_Integer)unpack_rawlen(L, 1));
 
 #if defined(LUA_LJDIR)
     if (lua_isnoneornil(L, 3)) {
@@ -45,7 +61,7 @@ static int unpack_lua(lua_State *L)
         lua_settop(L, 2);
         lua_pushnil(L);
         while (lua_next(L, 2)) {
-            if (lauxh_isinteger(L, -2)) {
+            if (unpack_isinteger(L, -2)) {
                 int top         = lua_gettop(th);
                 lua_Integer idx = lua_tointeger(L, -2);
 

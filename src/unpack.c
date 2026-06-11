@@ -33,14 +33,63 @@
 # define unpack_rawlen(L, idx) lua_rawlen((L), (idx))
 #endif
 
-#if LUA_VERSION_NUM >= 503
-# define unpack_isinteger(L, idx) lua_isinteger((L), (idx))
-#else
+#if defined(LUA_LJDIR)
+
 static inline int unpack_isinteger(lua_State *L, int idx)
 {
     return lua_type(L, idx) == LUA_TNUMBER &&
            (lua_Number)lua_tointeger(L, idx) == lua_tonumber(L, idx);
 }
+
+static inline int unpack_lj(lua_State *L, lua_Integer i)
+{
+    unsigned int n = 0;
+    lua_State *th  = lua_newthread(L);
+
+    lua_insert(L, 1);
+    lua_settop(L, 2);
+    lua_pushnil(L);
+    while (lua_next(L, 2)) {
+        if (unpack_isinteger(L, -2)) {
+            int top         = lua_gettop(th);
+            lua_Integer idx = lua_tointeger(L, -2);
+
+            // ignore index less than i
+            if (idx < i) {
+                lua_pop(L, 1);
+                continue;
+            }
+
+            // calculate target index on new stack
+            idx = idx - i + 1;
+            if (idx > top && !lua_checkstack(th, idx - top)) {
+                return luaL_error(L, "too many results to unpack");
+            } else if (idx <= top) {
+                lua_xmove(L, th, 1);
+                lua_replace(th, idx);
+                continue;
+            }
+
+            // fill nils for missing indexes
+            for (int j = top + 1; j < idx; j++) {
+                lua_pushnil(th);
+            }
+            lua_xmove(L, th, 1);
+            continue;
+        }
+        lua_pop(L, 1);
+    }
+
+    // return results
+    lua_settop(L, 1);
+    n = lua_gettop(th);
+    if (!lua_checkstack(L, n)) {
+        return luaL_error(L, "too many results to unpack");
+    }
+    lua_xmove(th, L, n);
+    return (int)n;
+}
+
 #endif
 
 static int unpack_lua(lua_State *L)
@@ -55,50 +104,7 @@ static int unpack_lua(lua_State *L)
 
 #if defined(LUA_LJDIR)
     if (lua_isnoneornil(L, 3)) {
-        lua_State *th = lua_newthread(L);
-
-        lua_insert(L, 1);
-        lua_settop(L, 2);
-        lua_pushnil(L);
-        while (lua_next(L, 2)) {
-            if (unpack_isinteger(L, -2)) {
-                int top         = lua_gettop(th);
-                lua_Integer idx = lua_tointeger(L, -2);
-
-                // ignore index less than i
-                if (idx < i) {
-                    lua_pop(L, 1);
-                    continue;
-                }
-
-                // calculate target index on new stack
-                idx = idx - i + 1;
-                if (idx > top && !lua_checkstack(th, idx - top)) {
-                    return luaL_error(L, "too many results to unpack");
-                } else if (idx <= top) {
-                    lua_xmove(L, th, 1);
-                    lua_replace(th, idx);
-                    continue;
-                }
-
-                // fill nils for missing indexes
-                for (int j = top + 1; j < idx; j++) {
-                    lua_pushnil(th);
-                }
-                lua_xmove(L, th, 1);
-                continue;
-            }
-            lua_pop(L, 1);
-        }
-
-        // return results
-        lua_settop(L, 1);
-        n = lua_gettop(th);
-        if (!lua_checkstack(L, n)) {
-            return luaL_error(L, "too many results to unpack");
-        }
-        lua_xmove(th, L, n);
-        return (int)n;
+        return unpack_lj(L, i);
     }
 #endif
 
